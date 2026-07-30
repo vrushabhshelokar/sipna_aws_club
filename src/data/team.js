@@ -16,6 +16,19 @@ function slugify(name) {
 }
 
 /**
+ * Standardizes member names by removing middle/father's names.
+ * Ensures strict 'FirstName Surname' format while preserving original casing and spelling.
+ */
+function cleanName(nameStr) {
+  if (!nameStr) return '';
+  const parts = nameStr.trim().split(/\s+/);
+  if (parts.length <= 2) {
+    return nameStr.trim();
+  }
+  return `${parts[0]} ${parts[parts.length - 1]}`;
+}
+
+/**
  * Standardizes academic year values to '1st Year' | '2nd Year' | '3rd Year' | '4th Year'
  * Handles typos and inconsistent casing while preserving factual year data.
  */
@@ -124,7 +137,8 @@ function parseRealData(text) {
     const isCore = posLower.includes('lead') || posLower.includes('sbgl') || posLower.includes('chair');
     const category = isCore ? 'core' : 'member';
 
-    const slug = slugify(rawObj.name);
+    const formattedName = cleanName(rawObj.name || '');
+    const slug = slugify(formattedName);
 
     let imagePath = rawObj.image || '';
     if (imagePath.includes('below') || imagePath.includes('http') || imagePath.includes(':')) {
@@ -158,7 +172,7 @@ function parseRealData(text) {
       id: `real-${index + 1}`,
       slug: slug,
       category: category,
-      name: rawObj.name || '',
+      name: formattedName,
       position: rawObj.position || '',
       department: normalizeDepartment(rawObj.department),
       year: normalizeYear(rawObj.year),
