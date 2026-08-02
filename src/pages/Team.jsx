@@ -1,56 +1,71 @@
 import React from 'react';
 import Container from '../components/common/Container';
-import SectionTitle from '../components/common/SectionTitle';
+import LeaderCard from '../components/team/LeaderCard';
 import TeamSection from '../components/team/TeamSection';
 import SEO from '../components/seo/SEO';
-import { getCoreTeam, getGeneralTeam } from '../data/team';
+import { getClubLeader, getCoreTeam, getGeneralTeam } from '../data/team';
+import { HiSparkles } from 'react-icons/hi2';
 
-/**
- * Team Page Component.
- * Displays Core Team leadership and general Team Members.
- * Consumes data exclusively from src/data/team.js.
- * Uses as="h1" on primary section title for WCAG heading hierarchy compliance.
- */
 function Team() {
+  const leader = getClubLeader();
   const coreTeam = getCoreTeam();
   const generalTeam = getGeneralTeam();
 
   return (
-    <div className="py-12 md:py-20 space-y-12">
+    <div className="py-12 md:py-20 space-y-16">
       {/* Team SEO Metadata */}
       <SEO
         title="Team | Sipna AWS Club"
         description="Meet the core leadership and student team members of Sipna AWS Club at Sipna COET."
       />
 
-      {/* Page Header (Single h1 for Team Page) */}
+      {/* Page Header */}
       <Container>
-        <SectionTitle
-          as="h1"
-          badge="Sipna AWS Club Team"
-          title="Meet Our Team"
-          subtitle="Passionate student leaders, cloud enthusiasts, and developers driving AWS awareness, bootcamps, and technical workshops across Sipna COET."
-          centered
-        />
+        <div className="text-center max-w-3xl mx-auto">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold uppercase tracking-wider bg-purple-500/10 text-purple-300 border border-purple-500/20 mb-4">
+            <HiSparkles className="w-3.5 h-3.5 text-purple-400" />
+            <span>Sipna AWS Club Roster</span>
+          </div>
+          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold text-white tracking-tight mb-4">
+            Meet Our Leadership & Team
+          </h1>
+          <p className="text-zinc-400 text-sm sm:text-lg leading-relaxed">
+            Passionate student leaders, cloud architects, and developers driving AWS awareness, bootcamps, and technical workshops across Sipna COET.
+          </p>
+        </div>
       </Container>
 
-      {/* Core Team Section */}
+      {/* Leader Section */}
+      {leader && (
+        <Container>
+          <div className="mb-4 text-center">
+            <span className="text-xs font-semibold uppercase tracking-widest text-purple-400">
+              Club Lead
+            </span>
+          </div>
+          <LeaderCard member={leader} />
+        </Container>
+      )}
+
+      {/* Core Team Section (3-Column Grid) */}
       <TeamSection
-        badge="Leadership"
-        title="Core Team"
-        description="The executive leadership managing club operations, technical sessions, and community growth."
+        badge="Executive Board"
+        title="Core Team Leadership"
+        description="The executive leadership managing club operations, technical tracks, and community growth."
         members={coreTeam}
         emptyMessage="Core team members will be announced soon."
       />
 
-      {/* Team Members Section */}
-      <TeamSection
-        badge="Contributors"
-        title="Team Members"
-        description="Active associates and student contributors assisting in cloud projects and event execution."
-        members={generalTeam}
-        emptyMessage="General team members will be listed soon."
-      />
+      {/* General Team Section */}
+      {generalTeam && generalTeam.length > 0 && (
+        <TeamSection
+          badge="Contributors"
+          title="Team Associates & Members"
+          description="Active associates assisting in cloud projects, event organization, and design."
+          members={generalTeam}
+          emptyMessage="General team members will be listed soon."
+        />
+      )}
     </div>
   );
 }

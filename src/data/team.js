@@ -1,10 +1,80 @@
 /**
  * Centralized Single Source of Truth for Sipna AWS Club Team Members.
  * Dynamically parses, standardizes, and sorts the official dataset from src/data/realData.json.
+ * Resolves member photos dynamically from src/assets/team/ using Vite eager glob matching.
  * Strictly adheres to schema rules defined in Rules.md Section 6.
  */
 
 import realDataText from './realData.json?raw';
+
+// Eagerly import all images from src/assets/team/ directory
+const teamImagesMap = import.meta.glob('../assets/team/*', {
+  eager: true,
+  import: 'default'
+});
+
+function cleanForMatching(str) {
+  return (str || '')
+    .toLowerCase()
+    .replace(/[^\w]/g, '');
+}
+
+/**
+ * Resiliently matches a team member's name against image files in src/assets/team/
+ */
+function resolveMemberImage(memberName, rawImagePath) {
+  const cleanMemberName = cleanForMatching(memberName);
+  const firstName = cleanForMatching((memberName || '').split(/\s+/)[0]);
+
+  const imageEntries = Object.entries(teamImagesMap).map(([path, url]) => {
+    const filenameWithExt = path.split('/').pop() || '';
+    const filenameNoExt = filenameWithExt.substring(0, filenameWithExt.lastIndexOf('.'));
+    const cleanFilename = cleanForMatching(filenameNoExt);
+    return { path, url, cleanFilename };
+  });
+
+  // 1. Check if rawImagePath matches any imported image
+  if (rawImagePath) {
+    const cleanRaw = cleanForMatching(rawImagePath);
+    if (cleanRaw) {
+      const directMatch = imageEntries.find(
+        (e) => e.cleanFilename === cleanRaw || cleanRaw.includes(e.cleanFilename)
+      );
+      if (directMatch) return directMatch.url;
+    }
+  }
+
+  // 2. Exact match on first name
+  if (firstName) {
+    const exactFirstNameMatch = imageEntries.find(
+      (e) => e.cleanFilename === firstName
+    );
+    if (exactFirstNameMatch) return exactFirstNameMatch.url;
+  }
+
+  // 3. Fuzzy / Spelling variation matching
+  const fuzzyMatch = imageEntries.find((e) => {
+    if (!e.cleanFilename || e.cleanFilename === 'gitkeep') return false;
+    
+    // Prevent 'Harsh' from matching 'Harshdeep'
+    if (firstName === 'harsh' && e.cleanFilename === 'harshdeep') return false;
+
+    if (cleanMemberName.includes(e.cleanFilename) || e.cleanFilename.includes(firstName)) {
+      return true;
+    }
+
+    // Phonetic spelling variations (e.g., Shrushti <-> Shrusthti)
+    if (firstName.startsWith('shrus') && e.cleanFilename.startsWith('shrus')) {
+      return true;
+    }
+
+    return false;
+  });
+
+  if (fuzzyMatch) return fuzzyMatch.url;
+
+  return '';
+}
 
 function slugify(name) {
   return (name || '')
@@ -30,7 +100,6 @@ function cleanName(nameStr) {
 
 /**
  * Standardizes academic year values to '1st Year' | '2nd Year' | '3rd Year' | '4th Year'
- * Handles typos and inconsistent casing while preserving factual year data.
  */
 function normalizeYear(yearStr) {
   if (!yearStr) return '';
@@ -46,7 +115,6 @@ function normalizeYear(yearStr) {
 
 /**
  * Standardizes department names to official full titles.
- * Corrects spelling mistakes and inconsistent abbreviations.
  */
 function normalizeDepartment(deptStr) {
   if (!deptStr) return '';
@@ -140,10 +208,12 @@ function parseRealData(text) {
     const formattedName = cleanName(rawObj.name || '');
     const slug = slugify(formattedName);
 
-    let imagePath = rawObj.image || '';
-    if (imagePath.includes('below') || imagePath.includes('http') || imagePath.includes(':')) {
-      imagePath = '';
+    let rawImage = rawObj.image || '';
+    if (rawImage.includes('below') || rawImage.includes('http') || rawImage.includes(':')) {
+      rawImage = '';
     }
+
+    const resolvedImage = resolveMemberImage(formattedName, rawImage);
 
     let linkedin = rawObj.linkedin || '';
     if (linkedin && linkedin !== '--') {
@@ -176,7 +246,7 @@ function parseRealData(text) {
       position: rawObj.position || '',
       department: normalizeDepartment(rawObj.department),
       year: normalizeYear(rawObj.year),
-      image: imagePath,
+      image: resolvedImage,
       linkedin: linkedin,
       github: github,
       instagram: instagram,
@@ -184,11 +254,6 @@ function parseRealData(text) {
     };
   });
 
-  /**
-   * Sort Member Ordering:
-   * Primary Sort: 3rd Year -> 2nd Year -> 1st Year -> 4th Year
-   * Secondary Sort: Preserve existing order from realData.json (originalIndex)
-   */
   const yearPriority = {
     '3rd Year': 1,
     '2nd Year': 2,
@@ -212,24 +277,102 @@ function parseRealData(text) {
 export const teamMembers = parseRealData(realDataText);
 
 /**
- * Returns all members categorized as Core Team Leadership.
+ * Returns the primary Club Leader.
+ */
+export function getClubLeader() {
+  return (
+    teamMembers.find(
+      (m) =>
+        m.position.toLowerCase().includes('sbgl') ||
+        m.position.toLowerCase().includes('club lead') ||
+        m.position.toLowerCase().includes('president')
+    ) || teamMembers[0]
+  );
+}
+
+/**
+ * Returns all members categorized as Core Team Leadership (excluding the primary leader).
+ * Sorted strictly by domain priority: Technical Head -> Management -> Design -> Marketing -> Content -> Sponsorship.
  */
 export function getCoreTeam() {
-  return teamMembers.filter((member) => member.category === 'core');
+  const leader = getClubLeader();
+  const coreMembers = teamMembers.filter(
+    (member) => member.category === 'core' && member.id !== leader?.id
+  );
+
+  function getDomainPriority(position) {
+    const pos = (position || '').toLowerCase();
+    if (pos.includes('teachnical') || pos.includes('technical')) return 1;
+    if (pos.includes('management')) return 2;
+    if (pos.includes('design')) return 3;
+    if (pos.includes('marketing')) return 4;
+    if (pos.includes('content') || pos.includes('social media')) return 5;
+    if (pos.includes('spons')) return 6;
+    return 99;
+  }
+
+  return coreMembers.sort(
+    (a, b) => getDomainPriority(a.position) - getDomainPriority(b.position)
+  );
 }
 
 /**
  * Returns all members categorized as general Team Members.
+ * Positions Vidhi Manjare at 1st position and Chinmay Barad at 2nd position in the grid.
  */
 export function getGeneralTeam() {
-  return teamMembers.filter((member) => member.category === 'member');
+  const members = teamMembers.filter(
+    (member) => member.category === "member"
+  );
+
+  const vidhi = members.find((m) =>
+    m.name.toLowerCase().includes("vidhi")
+  );
+  const chinmay = members.find((m) =>
+    m.name.toLowerCase().includes("chinmay")
+  );
+  const krutika = members.find((m) =>
+    m.name.toLowerCase().includes("krutika")
+  );
+
+  const aman = members.find((m) =>
+    m.name.toLowerCase().includes("aman")
+  );
+  const ritesh = members.find((m) =>
+    m.name.toLowerCase().includes("ritesh")
+  );
+  const prajakta = members.find((m) =>
+    m.name.toLowerCase().includes("prajakta")
+  );
+  const devanshu = members.find((m) =>
+    m.name.toLowerCase().includes("devanshu")
+  );
+
+  const rest = members.filter(
+    (m) =>
+      m.id !== vidhi?.id &&
+      m.id !== chinmay?.id &&
+      m.id !== krutika?.id &&
+      m.id !== aman?.id &&
+      m.id !== ritesh?.id &&
+      m.id !== prajakta?.id &&
+      m.id !== devanshu?.id
+  );
+
+  return [
+    vidhi,
+    chinmay,
+    krutika,
+    aman,
+    ritesh,
+    prajakta,
+    devanshu,
+    ...rest,
+  ].filter(Boolean);
 }
 
 /**
  * Resolves a team member by URL slug.
- * Supports exact match, prefix match, or partial slug lookup.
- * @param {string} slug
- * @returns {object|undefined}
  */
 export function getMemberBySlug(slug) {
   if (!slug) return undefined;
@@ -244,8 +387,6 @@ export function getMemberBySlug(slug) {
 
 /**
  * Validates if a member slug exists in the team dataset.
- * @param {string} slug
- * @returns {boolean}
  */
 export function isValidMemberSlug(slug) {
   return Boolean(getMemberBySlug(slug));
@@ -253,9 +394,6 @@ export function isValidMemberSlug(slug) {
 
 /**
  * Returns suggested/other team members excluding the current profile slug.
- * @param {string} currentSlug
- * @param {number} limit
- * @returns {Array}
  */
 export function getRelatedMembers(currentSlug, limit = 4) {
   const current = (currentSlug || '').toLowerCase();

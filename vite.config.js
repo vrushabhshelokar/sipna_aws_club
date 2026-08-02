@@ -23,5 +23,12 @@ export default defineConfig({
         }
       }
     }
-  }
+  },
+  server: {
+    host: true,
+    allowedHosts: [
+      '.trycloudflare.com',
+      '.sipnaengg.ac.in',
+    ],
+  },
 })

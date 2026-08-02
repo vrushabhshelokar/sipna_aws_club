@@ -1,15 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import { HiOutlineBars3, HiOutlineXMark } from 'react-icons/hi2';
-import Container from '../common/Container';
+import { FaAws } from 'react-icons/fa';
+import { motion, AnimatePresence } from 'framer-motion';
 
-/**
- * Sticky top navigation bar.
- * Primary navigation contains strictly Home and Team per Rules.md Section 14.
- * Accessible with ARIA state attributes, focus states, and landmark navigation.
- */
 function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
 
   const navItems = [
     { name: 'Home', path: '/' },
@@ -18,7 +15,14 @@ function Navbar() {
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false);
 
-  // Close mobile drawer menu on desktop viewport resize
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   useEffect(() => {
     const handleResize = () => {
       if (window.innerWidth >= 768) {
@@ -30,91 +34,130 @@ function Navbar() {
   }, []);
 
   return (
-    <header className="sticky top-0 z-50 glass-panel border-b border-slate-800/80 transition-all duration-200">
-      <Container>
-        <div className="flex items-center justify-between h-16 sm:h-20">
+    <header className="sticky top-0 z-50 pt-3 px-4 sm:px-6 transition-all duration-300">
+      <div className={`max-w-5xl mx-auto rounded-2xl border transition-all duration-300 ${
+        scrolled 
+          ? 'bg-[#121216]/90 backdrop-blur-xl border-purple-500/20 shadow-[0_8px_30px_rgb(0,0,0,0.5)] shadow-purple-950/10' 
+          : 'bg-[#121216]/60 backdrop-blur-md border-white/10'
+      }`}>
+        <div className="flex items-center justify-between h-14 sm:h-16 px-4 sm:px-6">
           {/* Brand Logo */}
           <Link
             to="/"
             onClick={closeMobileMenu}
-            className="flex items-center gap-2.5 sm:gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 rounded-xl min-h-[44px]"
+            className="flex items-center gap-3 group focus:outline-none"
             aria-label="Sipna AWS Club Home"
           >
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-slate-950 font-extrabold font-heading text-base sm:text-lg shadow-md shadow-amber-500/20 group-hover:scale-105 transition-transform duration-200" aria-hidden="true">
-              AWS
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-tr from-purple-600 via-indigo-500 to-purple-400 p-[1px] shadow-lg shadow-purple-500/20 group-hover:scale-105 transition-transform duration-300">
+              <div className="w-full h-full bg-[#0D0D0E] rounded-[11px] flex items-center justify-center text-purple-400">
+                <FaAws className="w-5 h-5 text-purple-400 group-hover:text-white transition-colors" />
+              </div>
             </div>
             <div className="flex flex-col">
-              <span className="font-heading font-extrabold text-base sm:text-lg text-slate-100 group-hover:text-amber-400 transition-colors leading-tight">
+              <span className="font-heading font-bold text-sm sm:text-base text-white group-hover:text-purple-300 transition-colors leading-tight">
                 Sipna AWS Club
               </span>
-              <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium tracking-wider uppercase">
-                Cloud Community
+              <span className="text-[10px] text-zinc-400 font-medium tracking-wider uppercase">
+                Student Chapter
               </span>
             </div>
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden md:flex items-center gap-1.5" aria-label="Main Navigation">
+          <nav className="hidden md:flex items-center gap-1.5 bg-[#0D0D0E]/60 p-1 rounded-xl border border-white/5" aria-label="Main Navigation">
             {navItems.map((item) => (
               <NavLink
                 key={item.path}
                 to={item.path}
                 end={item.path === '/'}
                 className={({ isActive }) =>
-                  `px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 min-h-[40px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 ${
+                  `relative px-4 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-colors duration-200 min-h-[36px] flex items-center ${
                     isActive
-                      ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm'
-                      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
+                      ? 'text-white'
+                      : 'text-zinc-400 hover:text-zinc-200'
                   }`
                 }
               >
-                {item.name}
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <motion.div
+                        layoutId="navbar-active-pill"
+                        className="absolute inset-0 bg-purple-600/20 border border-purple-500/40 rounded-lg"
+                        transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      />
+                    )}
+                    <span className="relative z-10">{item.name}</span>
+                  </>
+                )}
               </NavLink>
             ))}
           </nav>
 
-          {/* Mobile Menu Toggle Button */}
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden min-w-[44px] min-h-[44px] p-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/80 border border-slate-700/50 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50"
-            aria-label="Toggle Navigation Menu"
-            aria-expanded={isMobileMenuOpen}
-            aria-controls="mobile-menu"
-          >
-            {isMobileMenuOpen ? (
-              <HiOutlineXMark className="w-6 h-6" aria-hidden="true" />
-            ) : (
-              <HiOutlineBars3 className="w-6 h-6" aria-hidden="true" />
-            )}
-          </button>
+          {/* Quick Action & Mobile Toggle */}
+          <div className="flex items-center gap-3">
+            <a
+              href="#events"
+              className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 hover:text-white border border-purple-500/30 text-xs font-semibold tracking-wide transition-all duration-200 hover:shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+            >
+              Join Club
+            </a>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl text-zinc-300 hover:text-white bg-white/5 border border-white/10 flex items-center justify-center focus:outline-none"
+              aria-label="Toggle Navigation Menu"
+              aria-expanded={isMobileMenuOpen}
+            >
+              {isMobileMenuOpen ? (
+                <HiOutlineXMark className="w-5 h-5 text-purple-400" />
+              ) : (
+                <HiOutlineBars3 className="w-5 h-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation Drawer */}
-        {isMobileMenuOpen && (
-          <div id="mobile-menu" className="md:hidden py-4 border-t border-slate-800/80 backdrop-blur-xl bg-slate-950/95 rounded-b-2xl animate-fadeIn">
-            <nav className="flex flex-col gap-2" aria-label="Mobile Navigation">
-              {navItems.map((item) => (
-                <NavLink
-                  key={item.path}
-                  to={item.path}
-                  end={item.path === '/'}
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="md:hidden overflow-hidden border-t border-white/10 px-4 py-3 bg-[#0D0D0E]/95 rounded-b-2xl"
+            >
+              <nav className="flex flex-col gap-1.5" aria-label="Mobile Navigation">
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    end={item.path === '/'}
+                    onClick={closeMobileMenu}
+                    className={({ isActive }) =>
+                      `px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                        isActive
+                          ? 'bg-purple-600/20 text-purple-300 border border-purple-500/30'
+                          : 'text-zinc-400 hover:text-white hover:bg-white/5'
+                      }`
+                    }
+                  >
+                    {item.name}
+                  </NavLink>
+                ))}
+                <a
+                  href="#events"
                   onClick={closeMobileMenu}
-                  className={({ isActive }) =>
-                    `px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 min-h-[44px] flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/50 ${
-                      isActive
-                        ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
-                    }`
-                  }
+                  className="mt-2 text-center py-2.5 rounded-xl bg-purple-600 text-white font-medium text-sm shadow-lg shadow-purple-600/30"
                 >
-                  {item.name}
-                </NavLink>
-              ))}
-            </nav>
-          </div>
-        )}
-      </Container>
+                  Join Club
+                </a>
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </header>
   );
 }
