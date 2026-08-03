@@ -7,14 +7,14 @@ const stats = [
   {
     id: 'members',
     icon: HiOutlineUserGroup,
-    value: '120+',
+    value: '22',
     label: 'Active Student Members',
     description: 'Enthusiastic builders across IT, CSE, AI & DS departments.'
   },
   {
     id: 'workshops',
     icon: HiOutlineAcademicCap,
-    value: '15+',
+    value: '0',
     label: 'Hands-on Workshops',
     description: 'Cloud bootcamps covering S3, EC2, Lambda & Serverless.'
   },
@@ -26,11 +26,11 @@ const stats = [
     description: 'Students actively preparing for Cloud Practitioner & Solutions Architect.'
   },
   {
-    id: 'projects',
+    id: 'Sessions',
     icon: HiOutlineRocketLaunch,
-    value: '20+',
-    label: 'Cloud Solutions Built',
-    description: 'Full-stack applications deployed on AWS infrastructure.'
+    value: '1',
+    label: 'Expert Sessions',
+    description: 'Gain practical insights and advance your career with exclusive sessions hosted by field experts.'
   }
 ];
 

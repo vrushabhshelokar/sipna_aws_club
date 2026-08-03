@@ -10,7 +10,7 @@ export const siteConfig = {
   tagline: 'Empowering Future Cloud Innovators',
   description: 'The official AWS Student Club at Sipna COET. A vibrant student community dedicated to fostering cloud computing skills, AWS certifications, and hands-on technical workshops.',
   contact: {
-    email: 'awsclub@sipnaengg.ac.in',
+    
     address: 'Sipna College of Engineering & Technology, In front of Nemani Godown, Badnera Road, Amravati, Maharashtra 444607'
   },
   socialLinks: {
